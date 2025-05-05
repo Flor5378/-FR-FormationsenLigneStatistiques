@@ -1,0 +1,649 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+# Importing necessary libraries
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(lubridate)
+library(naniar)
+```
+
+```{r}
+effec1 <- read.csv("H:/Documents/statistics/effec1.quest.compil.csv", sep=",",fileEncoding = "ISO-8859-1")
+effec2 <- read.csv("H:/Documents/statistics/effec2.quest.compil.csv", sep=",", fileEncoding = "ISO-8859-1")
+effec3 <- read.csv("H:/Documents/statistics/effec3.quest.compil.csv", sep=",", fileEncoding = "ISO-8859-1")
+
+usages1 <- read.csv("H:/Documents/statistics/usages.effec1.csv", sep=",", fileEncoding = "ISO-8859-1")
+usages2 <- read.csv("H:/Documents/statistics/usages.effec2.csv", sep=",", fileEncoding = "ISO-8859-1")
+usages3 <- read.csv("H:/Documents/statistics/usages.effec3.csv", sep=",", fileEncoding = "ISO-8859-1")
+```
+
+```{r}
+colnames(usages1)
+colnames(effec1)
+```
+
+```{r}
+usages1 <- usages1 %>%
+    mutate(Video_total = rowSums(select(., c("S1.L1", "S1.L2", "S1.L3", "S1.L4", "S1.L5", "S1.L6", "S2.L1", "S2.L2", "S2.L3", "S2.L4", "S2.L5", "S2.L6", "S3.L1.1", "S3.L1.2", "S3.L2", "S3.L3", "S3.L4", "S3.L5", "S4.L1.1", "S4.L1.2", "S4.L2", "S4.L3", "S4.L4", "S4.L5", "S5.L1.1", "S5.L1.2", "S5.L2", "S5.L3", "S5.L4"))))
+
+usages2 <- usages2 %>%
+    mutate(Video_total = rowSums(select(., c("S1.L1", "S1.L2", "S1.L3", "S1.L4", "S1.L5", "S1.L6", "S2.L1", "S2.L2", "S2.L3", "S2.L4", "S2.L5", "S2.L6", "S3.L1.1", "S3.L1.2", "S3.L2", "S3.L3", "S3.L4", "S3.L5", "S4.L1.1", "S4.L1.2", "S4.L2", "S4.L3", "S4.L4", "S4.L5", "S5.L1.1", "S5.L1.2", "S5.L2", "S5.L3", "S5.L4"))))
+
+usages3 <- usages3 %>%
+    mutate(Video_total = rowSums(select(., c("S1.L1", "S1.L2", "S1.L3", "S1.L4", "S1.L5", "S1.L6", "S2.L1", "S2.L2", "S2.L3", "S2.L4", "S2.L5", "S2.L6", "S3.L1.1", "S3.L1.2", "S3.L2", "S3.L3", "S3.L4", "S3.L5", "S4.L1.1", "S4.L1.2", "S4.L2", "S4.L3", "S4.L4", "S4.L5", "S5.L1.1", "S5.L1.2", "S5.L2", "S5.L3", "S5.L4"))))
+
+```
+
+```{r}
+merged1 <- merge(effec1, usages1, by = "Student_ID")
+merged2 <- merge(effec2, usages2, by = "Student_ID")
+merged3 <- merge(effec3, usages3, by = "Student_ID")
+```
+
+
+```{r}
+merged1 <- merged1 %>% mutate(iteration = 1)
+merged2 <- merged2 %>% mutate(iteration = 2)
+merged3 <- merged3 %>% mutate(iteration = 3)
+
+```
+
+```{r}
+create_calculated_vars <- function(data) {
+  data %>%
+    mutate(
+      quizzes_completed = rowSums(select_if(., is.numeric) %>% select(starts_with("Quizz.") & ends_with(".bin")), na.rm = TRUE)
+      
+    )
+}
+```
+
+
+```{r}
+merged1_modif <- create_calculated_vars(merged1)
+merged2_modif <- create_calculated_vars(merged2)
+merged3_modif <- create_calculated_vars(merged3)
+```
+
+
+```{r}
+head(merged1_modif, 20)
+```
+
+
+```{r}
+# Standardize the `birth.year` column type as character (or numeric) across all datasets
+merged1_modif <- merged1_modif %>%
+  mutate(
+    Curiosity.MOOC = as.character(Curiosity.MOOC),
+    Rencontres = as.character(Rencontres),
+    birth.year = as.character(birth.year)  # or as.numeric(birth.year), based on your data
+  )
+
+merged2_modif <- merged2_modif %>%
+  mutate(
+    Curiosity.MOOC = as.character(Curiosity.MOOC),
+    Rencontres = as.character(Rencontres),
+    birth.year = as.character(birth.year)  # or as.numeric(birth.year)
+  )
+
+merged3_modif <- merged3_modif %>%
+  mutate(
+    Curiosity.MOOC = as.character(Curiosity.MOOC),
+    Rencontres = as.character(Rencontres),
+    birth.year = as.character(birth.year)  # or as.numeric(birth.year)
+  )
+
+# Combine the datasets
+merged <- bind_rows(merged1_modif, merged2_modif, merged3_modif)
+```
+
+
+```{r}
+str(merged)
+```
+```{r}
+merged <- merged %>%
+  select(Gender, Country_HDI, Video_total, quizzes_completed, iteration, Exam.bin, Assignment.bin)
+
+```
+
+
+```{r}
+Quizz_total1 <- rowSums(usages1[, c("Quizz.1.bin", "Quizz.2.bin", "Quizz.3.bin", "Quizz.4.bin","Quizz.5.bin")])
+Quizz_total2 <- rowSums(usages2[, c("Quizz.1.bin", "Quizz.2.bin", "Quizz.3.bin", "Quizz.4.bin","Quizz.5.bin")])
+Quizz_total3 <- rowSums(usages3[, c("Quizz.1.bin", "Quizz.2.bin", "Quizz.3.bin", "Quizz.4.bin","Quizz.5.bin")])
+```
+
+
+```{r}
+merged <- merged %>%
+  mutate(
+    HDI_grouped = case_when(
+      Country_HDI == "B" ~ "B",
+      Country_HDI %in% c("M", "H") ~ "I",
+      Country_HDI == "TH" ~ "TH",
+      TRUE ~ NA_character_
+    )
+  )
+```
+
+```{r}
+hdi_count <- merged %>%
+  count(HDI_grouped) %>%
+  rename(HDI_Category = HDI_grouped, Count = n)
+```
+
+
+```{r}
+merged <- merged %>%
+  #Si Exam.bin = 1 ou Assignment.bin = 1, alors on met 1 dans Certif.bin
+    mutate(Certif.bin = case_when(
+        Exam.bin == 1 | Assignment.bin == 1 ~ 1,
+        TRUE ~ 0
+    ))
+```
+
+
+```{r}
+# Ajouter des colonnes pour chaque type d'apprenant
+df_MOOC <- merged %>%
+  mutate(
+    Completer = ifelse(Exam.bin == 1 | Certif.bin == 1, 1, 0),  # Completer
+    Disengaging = ifelse((quizzes_completed > 0 | Assignment.bin == 1) & Exam.bin == 0 & Certif.bin == 0, 1, 0),  # Disengaging
+    Auditing = ifelse(Video_total > 6 & quizzes_completed == 0 & Assignment.bin == 0, 1, 0),  # Auditing
+    Bystander = ifelse(Video_total < 6 & quizzes_completed == 0 & Assignment.bin == 0, 1, 0)  # Bystander
+  )
+
+# Calculer les proportions par itération
+result_MOOC <- df_MOOC %>%
+  group_by(iteration) %>%
+  summarise(
+    Completer = mean(Completer),
+    Disengaging = mean(Disengaging),
+    Auditing = mean(Auditing),
+    Bystander = mean(Bystander)
+  ) %>%
+  mutate(iteration = iteration/100)
+
+# Afficher la table
+print(result_MOOC * 100)
+```
+
+```{r}
+df_MOOC <- df_MOOC %>%
+  select(-Country_HDI)
+```
+
+```{r}
+# Visualiser les données manquantes avec des séparateurs
+vis_miss(df_MOOC) +
+  labs(
+    title = "Visualisation des Données Manquantes",
+    x = "Variables",
+    y = "Observations"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 18, hjust = 0.5),
+    plot.subtitle = element_text(size = 14, hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 0.2, size = 12),
+    axis.text.y = element_text(size = 12),
+    panel.grid.major.x = element_blank(), # Pas de lignes de séparation verticales
+    panel.grid.major.y = element_line(color = "gray70", linewidth = 0.5), # Lignes entre les variables
+    panel.grid.minor = element_blank(),
+    plot.background = element_rect(fill = "white", color = "white")
+  ) +
+  guides(fill = guide_legend(title = "État des données"))
+
+```
+
+```{r}
+# 1. Créer le tableau de contingence entre Gender et HDI_grouped
+contingency_table <- table(df_MOOC$Gender, df_MOOC$HDI_grouped)
+
+# 2. Effectuer le test du chi²
+chi2_test <- chisq.test(contingency_table)
+
+# Afficher les résultats du test du chi²
+print(chi2_test)
+
+# 3. Résidus du test du chi²
+residuals <- chi2_test$residuals
+
+mosaic(
+  contingency_table,
+  shade = TRUE,       # Colore les cases en fonction des résidus
+  legend = TRUE,      # Affiche une légende des couleurs
+  main = "Mosaic Plot of Chi2 Residuals"
+)
+```
+
+```{r}
+library(vcd)
+```
+
+```{r}
+# Test du Chi2 pour l'indépendance entre Gender et HDI
+chi_test <- chisq.test(contingency_table)
+print(chi_test)
+
+# Calcul du V de Cramer
+cramer_v <- sqrt(chi_test$statistic / (sum(contingency_table) * min(dim(contingency_table) - 1)))
+print(cramer_v)
+
+# Création du mosaic plot sans les résidus
+mosaic(
+  contingency_table,
+  shade = TRUE,       # Colore les cases en fonction des résidus
+  legend = TRUE,      
+)
+```
+```{r}
+# Chargement des données Iris
+data(iris)
+# Représentation graphique : scatterplot
+library(ggplot2)
+
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width, color = Species, shape = Species)) +
+  geom_point() +
+  labs(title = "Largeur du pétale en fonction de la longueur du pétale",
+       x = "Longueur du pétale (cm)",
+       y = "Largeur du pétale (cm)") +
+  theme_minimal()
+```
+
+```{r}
+# Ajustement de la régression linéaire
+model <- lm(Petal.Width ~ Petal.Length, data = iris)
+
+# Affichage de la régression linéaire sur le graphique
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width, color = Species, shape = Species)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "black") +  # Ajouter la régression linéaire
+  labs(title = "Régression linéaire : Largeur du pétale en fonction de la longueur",
+       x = "Longueur du pétale (cm)",
+       y = "Largeur du pétale (cm)") +
+  theme_minimal()
+
+```
+
+```{r}
+# Calcul du coefficient de corrélation de Pearson
+cor(iris$Petal.Length, iris$Petal.Width)
+
+```
+
+```{r}
+# Boxplot de la largeur du pétale en fonction de l'espèce
+ggplot(iris, aes(x = Species, y = Petal.Width, fill = Species)) +
+  geom_boxplot() +
+  labs(title = "Boxplot de la largeur du pétale en fonction de l'espèce",
+       x = "Espèce",
+       y = "Largeur du pétale (cm)") +
+  theme_minimal()
+
+```
+
+```{r}
+# ANOVA pour tester l'effet de l'espèce sur la largeur du pétale
+anova_model <- aov(Petal.Width ~ Species, data = iris)
+
+# Affichage des résultats de l'ANOVA
+summary(anova_model)
+
+```
+```{r}
+# Somme des carrés
+anova_table <- summary(anova_model)[[1]]
+anova_table
+
+```
+
+```{r}
+# QQ plot pour diagnostiquer le modèle
+qqnorm(residuals(anova_model))
+qqline(residuals(anova_model), col = "red")
+
+
+```
+
+```{r}
+# Test de Kruskal-Wallis comme test non-paramétrique
+kruskal.test(Petal.Width ~ Species, data = iris)
+
+
+```
+```{r}
+t_test_result <- t.test(Video_total ~ Gender, data = merged)
+t_test_result
+```
+
+```{r}
+# Test non-paramétrique : Test de Mann-Whitney
+wilcox_test_result <- wilcox.test(Video_total ~ Gender, data = merged)
+wilcox_test_result
+
+```
+
+```{r}
+# Corrélation de Pearson entre les variables 'Videos_Vues' et 'Quiz_Realisés'
+pearson_corr <- cor(merged$Video_total, merged$quizzes_completed, method = "pearson")
+pearson_corr
+```
+
+```{r}
+# Corrélation de Spearman entre les variables 'Videos_Vues' et 'Quiz_Realisés'
+spearman_corr <- cor(merged$Video_total , merged$quizzes_completed, method = "spearman")
+spearman_corr
+
+```
+
+
+```{r}
+# Modèle de régression linéaire
+lm_model <- lm(Video_total ~ quizzes_completed, data = merged)
+summary(lm_model)
+
+```
+
+```{r}
+# Scatterplot avec régression linéaire
+library(ggplot2)
+ggplot(merged, aes(x = quizzes_completed, y = Video_total)) +
+  geom_point(aes(color = Gender)) +
+  geom_smooth(method = "lm", se = FALSE, color = "black") +
+  labs(title = "Relation entre le nombre de quiz réalisés et le nombre de vidéos vues",
+       x = "Nombre de quiz réalisés",
+       y = "Nombre de vidéos vues") +
+  theme_minimal()
+```
+
+```{r}
+# Modèle linéaire : effet de l'HDI et du genre
+mod <- lm(Video_total ~ HDI_grouped + Gender - 1, data = merged)
+
+# Résumé du modèle
+summary(mod)
+
+# ANOVA du modèle
+anova_result <- anova(mod)
+anova_result
+```
+
+```{r}
+#Ces degree of freedom sont expliqués car il y a 3 groupes dans l'HDI (haut-bas-moyen), d'où dfHDI= nbGroupe - 1 ainsi dfHDI = 2 et  dfGender = 1
+
+
+```
+
+```{r}
+# Modèle avec interaction entre Genre et HDI
+mod_interaction <- lm(Video_total ~ Gender * HDI_grouped, data = merged)
+anova_interaction <- anova(mod_interaction)
+summary(mod_interaction)
+```
+
+```{r}
+##6. Régression logistique
+```
+
+```{r}
+ # Modèle de régression logistique
+mod_logit <- glm(Exam.bin ~ Gender + HDI_grouped, data = merged, family = "binomial")
+
+# Résumé du modèle
+summary_mod <- summary(mod_logit)
+
+# Calcul des Odds Ratios, intervalles de confiance et p-values
+odds_ratios <- exp(coef(mod_logit))  # Exponentiation des coefficients
+conf_int <- exp(confint(mod_logit))  # Intervalles de confiance
+p_values <- coef(summary(mod_logit))[, 4]  # Extraction des p-values
+
+# Création de la table des résultats
+results_table <- data.frame(
+  Variable = c("Référence", "Gender (Femme)", "HDI (I)", "HDI (TH)"),
+  OR = round(odds_ratios, 3),
+  CI_lower = round(conf_int[, 1], 3),
+  CI_upper = round(conf_int[, 2], 3),
+  p_value = p_values
+)
+
+# Ajout des étoiles pour les p-values
+results_table$Signif <- ifelse(results_table$p_value < 0.001, "***",
+                      ifelse(results_table$p_value < 0.01, "**",
+                      ifelse(results_table$p_value < 0.05, "*", "ns")))
+
+# Format final
+results_table[1, "OR"] <- "Réf"  # La modalité de référence
+print(results_table)
+
+```
+
+
+
+1- Genre : Femme (vs Homme)
+L'Odds Ratio est de 1.122 avec un intervalle de confiance compris entre 1.001 et  1.256. Cela indique que les femmes ont environ 12.2 % plus de chances de réussir par rapport aux hommes. Cette différence est statistiquement significative car la p-value est inférieure à 0.05.
+
+2- HDI Intermédiaire (vs HDI Bas)
+L'Odds Ratio est de 1.119 avec un intervalle de confiance entre 0.852 et 1.465. Ce résultat n'est pas statistiquement significatif puisque la p-value est > à 0.05. Ainsi on peut en déduire que les chances de résussite à l'examen ne sont pas très différentes entre les groupes HDI intermédiaire et HDI bas (pays peu développé).
+
+3- HDI Très Haut (vs HDI Bas)
+L'Odds Ratio est de 1.372. Cela signifie que le groupe HDI très haut a environ 37.2 % plus de chances de réussir comparé au groupe HDI bas. Cette différence est hautement significative, comme l'indique la p-value < 0.001.
+
+De plus, dans l'étude précédente, l'analyse du nombre de vidéos visionnées a mis en évidence que cette variable variait en fonction de l'HDI, avec un effet statistiquement significatif, mais qu'elle n'était pas influencée de manière significative par le Genre.
+
+L'Odds Ratio (OR) permet ici de mesurer la force de l'association entre des variables explicatives (comme le Genre et l'HDI) et une variable dépendante binaire (par exemple, le succès ou non). Contrairement au Risk Ratio (RR), qui est basé sur les probabilités d'un événement entre deux groupes, l'OR est calculé à partir des rapports d'événements (de manière plus empirique). Lorsque les probabilités d'un événement sont faibles, les valeurs de l'OR et du RR convergent, produisant des résultats similaires. Cependant, lorsque les probabilités sont élevées, l'OR a tendance à amplifier l'association par rapport au RR.
+
+
+```{r}
+# Préparation des données pour le forest plot
+forest_data <- results_table[-1, ]  # Exclure la référence
+forest_data$Variable <- factor(forest_data$Variable, levels = forest_data$Variable)
+
+# Création du forest plot
+ggplot(forest_data, aes(x = Variable, y = OR, ymin = CI_lower, ymax = CI_upper)) +
+  geom_pointrange(size = 0.35, color = "blue") +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "green") +
+  coord_flip() +
+  labs(title = "Forest Plot des Odd-Ratios",
+       x = "Variables",
+       y = "Odd-Ratio (IC à 95%)") +
+  theme_minimal()
+
+
+```
+COMPETITION DE MATHS
+```{r}
+
+notes_maths <- read.csv("H:/Documents/statistics/maths_competition_awards_data.csv")
+
+```
+
+```{r}
+str(notes_maths)
+```
+
+```{r}
+# 6.2 Traitement de données de comptage-type : la loi de Poisson
+
+# Sélection aléatoire de 80% des données pour l'entraînement
+set.seed(123)  # Pour la reproductibilité
+training_data <- notes_maths %>% sample_frac(0.8)
+test_data <- anti_join(notes_maths, training_data)
+
+# Distribution des notes en mathématiques
+ggplot(training_data, aes(x = `Math.Score`)) +
+    geom_histogram(binwidth = 1, fill = "lightgreen", color = "darkgreen") +
+    labs(
+        title = "Distribution des notes en mathématiques",
+        x = "Note",
+        y = "Fréquence"
+    ) +
+    theme_minimal()
+
+# Distribution des récompenses
+ggplot(training_data, aes(x = Awards)) +
+    geom_histogram(binwidth = 1, fill = "orange", color = "red") +
+    labs(
+        title = "Distribution des récompenses",
+        x = "Récompenses",
+        y = "Fréquence"
+    ) +
+    theme_minimal()
+
+# Modèle de régression de Poisson
+poisson_model <- glm(Awards ~ `Math.Score`, data = training_data, family = "poisson")
+```
+
+```{r}
+# Diagnostic du modèle
+qqnorm(residuals(poisson_model))
+qqline(residuals(poisson_model), col = "red")
+```
+Un QQ plot est un graphique qui compare la distribution d’une variable observée à une distribution théorique, un modele en général. Les points du graphique représentent les quantiles des données observées par rapport aux quantiles théoriques. Si les données suivent bien la distribution théorique, les points s’alignent approximativement sur la diagonale. Tout écart par rapport à cette diagonale révèle des différences entre la distribution des données et la distribution attendue. De plus, la singularité du qq plot réside dans ses "tails" car elles représentent plus efficacement des singularités de distribution sur la manière dont les valeurs extrêmes se comportent par rapport à une distribution théorique. Les tails détecte des anomalies telles que des queues lourdes (sur-représentation des valeurs extrêmes) ou des queues légères (sous-représentation), non mises en évidence avec d'autres résumés statistiques.
+
+```{r}
+# Prédictions sur les données d'entraînement
+training_data$predicted <- predict(poisson_model, type = "response")
+```
+
+```{r}
+# Scatter plot avec données empiriques et prédictions
+ggplot(training_data, aes(x = `Math.Score`, y = Awards)) +
+  geom_point(color = "grey", alpha = 0.6) + # Points pour les données empiriques
+  geom_line(aes(y = predicted), color = "lightblue", size = 1) + # Ligne pour les prédictions
+  labs(
+    title = "Relation entre Math Score et Awards, données empiriques vs prédictions",
+    x = "Math Score",
+    y = "Awards"
+  ) +
+  theme_minimal()
+
+```
+
+```{r}
+# Prédictions sur les données de test
+test_data$predicted <- predict(poisson_model, newdata = test_data, type = "response")
+```
+
+```{r}
+# Scatter plot avec données empiriques et prédictions pour les données de test
+ggplot(test_data, aes(x = `Math.Score`, y = Awards)) +
+  geom_point(color = "blue", alpha = 0.6) + # Points pour les données empiriques
+  geom_line(aes(y = predicted), color = "red", size = 1) + # Ligne pour les prédictions
+  labs(
+    title = "Relation entre Math Score et Awards (Données de test)",
+    x = "Math Score",
+    y = "Awards"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+# Calcul de l'erreur quadratique moyenne (MSE) pour les données d'entraînement
+mse_training <- mean((training_data$Awards - training_data$predicted)^2)
+
+# Calcul de l'erreur quadratique moyenne (MSE) pour les données de test
+mse_test <- mean((test_data$Awards - test_data$predicted)^2)
+
+# Affichage des résultats
+cat("MSE sur les données d'entraînement :", mse_training, "\n")
+cat("MSE sur les données de test :", mse_test, "\n")
+
+```
+
+```{r}
+ggplot(df_MOOC, aes(x = Video_total)) +
+    geom_histogram(binwidth = 3, fill = "lightgreen", color = "darkred") +
+    labs(
+        title = "Distribution du nombre de vidéos vues",
+        x = "Nombre de vidéos vues",
+        y = "Effectif"
+    ) +
+    theme_minimal()
+```
+
+
+Le modèle est basé sur le principe de Zero-inflated et on a de la sur-dispertion de valeurs
+Dans le contexte d’un MOOC, la variance du "nombre de vidéos vues" est souvent beaucoup plus grande que la moyenne qui est dû à des comportements hétérogènes (aux extrémités: soit tout ou rien) et beaucoup de comptes sont créés mais ne deviennent pas actifs. Il faut donc employer d'autres types de modele de poisson. Tel que le Poisson-gamma ou le Poisson sur-dispersé.
+
+```{r}
+# Modèle binomial négatif
+library(MASS)
+nb_model <- glm.nb(Video_total ~ quizzes_completed + Gender, data = merged)
+
+```
+
+```{r}
+
+library(pscl)
+
+# Ajuster un modèle Zero Inflated Negative Binomial
+zinb_model <- zeroinfl(Video_total ~ quizzes_completed + Gender | 1, 
+                       data = merged, 
+                       dist = "negbin")
+
+# Résumé du modèle
+summary(zinb_model)
+
+# Comparaison des AIC
+AIC(nb_model, zinb_model)
+```
+On compare
+
+nb_model : Modèle Binomial Négatif (standard).
+zinb_model : Modèle Zero-Inflated Negative Binomial.
+
+on remarque d'après les AIC respectifs que le modèle ZINB (AIC = 59707.48) est meilleur que le modèle Binomial Négatif (AIC = 60404.09), car il capture mieux l'excès de zéros.(Un AIC plus faible indique un meilleur ajustement du modèle.)
+
+
+```{r}
+# Ajustement du modèle GLM avec une loi de Poisson
+poisson_model <- glm(Video_total ~ Gender + HDI_grouped, 
+                     family = poisson(link = "log"), 
+                     data = merged)
+
+```
+
+```{r}
+library(pscl)
+
+
+# Graphes de diagnostic pour le modèle ajusté
+par(mfrow = c(2, 2)) # Afficher 4 graphiques sur une même page
+plot(poisson_model)
+
+```
+
+```{r}
+# Résumé du modèle
+summary(poisson_model)
+```
+Le genre n'a pas d'effet significatif (p > 0,05) et son influence est négligeable. En revanche, l'HDI a un impact significatif (p < 0,001) : les apprenants des pays à HDI intermédiaire regardent 66 % de vidéos en plus que ceux des pays à faible HDI, et ceux des pays à très haut HDI en regardent plus du double.
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
