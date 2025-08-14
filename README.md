@@ -23,6 +23,11 @@ L’étude souligne ainsi des inégalités d’accès et de réussite liées au 
 - Données issues du MOOC *MOOC Effectuation*.  
 - Tests utilisés : Student, Chi2, ANOVA, régression logistique.
 
+## Exemple de résultats, en utilisant R:
+
+Le forest plot ci-dessous illustre l’impact de différentes variables (HDI et genre) sur les chances de complétion des formations en ligne. Un odds ratio supérieur à 1 indique une probabilité accrue de complétion par rapport à la catégorie de référence, tandis qu’un intervalle de confiance recoupant la ligne de référence (OR = 1) traduit l’absence d’effet significatif. Par exemple, si HDI (I) a un OR ≈ 1,12, ça veut dire que: les apprenants venant de pays avec un HDI intermédiaire ont environ 12 % plus de chances de compléter la formation que ceux de la catégorie de référence, toutes choses égales par ailleurs.
+<img width="700" height="432" alt="Image" src="https://github.com/user-attachments/assets/24ecdf75-1e56-4c30-8e20-c440ab7ce3b0" />
+
 ---
 
 ## Conclusion  
